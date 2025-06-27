@@ -177,21 +177,40 @@ If you have 300 physical LEDs and set `LED_DIVISOR=2`:
 
 ### Configuration
 
-#### Method 1: Global setting (affects all environments)
+#### Available Environments
+
+The project includes several pre-configured environments:
+
+- **WS281x_RGB**: Standard WS281x RGB LEDs with LED_DIVISOR=1 (normal operation)
+- **WS281x_RGB_HALF**: WS281x RGB LEDs with LED_DIVISOR=2 (duplicates each LED to 2 physical LEDs)
+- **WS281x_RGB_THREE**: WS281x RGB LEDs with LED_DIVISOR=3 (duplicates each LED to 3 physical LEDs)
+
+#### Method 1: Using pre-configured environments
+Simply select the environment that matches your needs:
+```bash
+# For normal operation (1:1 mapping)
+pio run -e WS281x_RGB
+
+# For 2:1 mapping (reduces bandwidth by 50%)
+pio run -e WS281x_RGB_HALF
+
+# For 3:1 mapping (reduces bandwidth by 66%)
+pio run -e WS281x_RGB_THREE
+```
+
+#### Method 2: Global setting (affects all environments)
 Edit the `[env]` section in `platformio.ini`:
 ```ini
 [env]
-framework = arduino
-extra_scripts = pre:extra_script.py
 build_flags = -DSERIALCOM_SPEED=921600 -DLED_DIVISOR=2
 ```
 
-#### Method 2: Environment-specific setting
+#### Method 3: Environment-specific setting
 Create a new environment or modify existing one:
 ```ini
-[env:WS281x_RGB_DUPLICATE]
+[env:WS281x_RGB_DUPLICATE_2]
 build_flags = -DNEOPIXEL_RGB -DDATA_PIN=2 -DLED_DIVISOR=2 ${env.build_flags}
-custom_prog_version = esp32_WS281x_RGB_DUPLICATE
+custom_prog_version = esp32_WS281x_RGB_DUPLICATE_2
 board = esp32dev
 platform = ${esp32.platform}
 lib_deps = ${esp32.lib_deps}
@@ -202,10 +221,21 @@ test_ignore = ${esp32.test_ignore}
 
 When using LED duplication, you need to configure HyperHDR with the **logical** number of LEDs (not the physical count).
 
-Example:
-- Physical LEDs: 300
-- LED_DIVISOR: 2
-- Configure HyperHDR with: 150 LEDs (half of leds on each side)
+**Formula:**
+```
+HyperHDR LED Count = Physical LED Count ÷ LED_DIVISOR
+```
+
+**Examples:**
+
+| Physical LEDs | LED_DIVISOR | HyperHDR Configuration | Result |
+|---------------|-------------|----------------------|---------|
+| 300 | 1 | 300 LEDs | Normal operation |
+| 300 | 2 | 150 LEDs | Each logical LED controls 2 physical LEDs |
+| 300 | 3 | 100 LEDs | Each logical LED controls 3 physical LEDs |
+| 600 | 2 | 300 LEDs | Each logical LED controls 2 physical LEDs |
+
+**Important:** The firmware will automatically handle the duplication. You only need to configure HyperHDR with the logical count.
 
 ### Benefits
 

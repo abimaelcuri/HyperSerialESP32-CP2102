@@ -234,6 +234,9 @@ void setup()
 			SerialPort.write("LED duplication enabled: each logical LED will control ");
 			SerialPort.print(LED_DIVISOR);
 			SerialPort.println(" physical LEDs");
+			SerialPort.write("Note: Configure HyperHDR with (physical_leds / ");
+			SerialPort.print(LED_DIVISOR);
+			SerialPort.println(") logical LEDs");
 		}
 
 		// Colorspace/Led type info

@@ -102,6 +102,13 @@ class Base
 			// Calculate the actual number of physical LEDs needed
 			int physicalLedCount = count * LED_DIVISOR;
 
+			// Debug message
+			SerialPort.write("Initializing LED strip: ");
+			SerialPort.print(count);
+			SerialPort.write(" logical LEDs -> ");
+			SerialPort.print(physicalLedCount);
+			SerialPort.println(" physical LEDs");
+
 			#if defined(SECOND_SEGMENT_START_INDEX)
 				if (physicalLedCount > SECOND_SEGMENT_START_INDEX)
 				{

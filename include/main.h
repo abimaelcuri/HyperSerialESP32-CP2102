@@ -160,7 +160,10 @@ void processData()
 					frameState.setState(AwaProtocol::HEADER_A);
 				else
 				{
-					if (ledSize != base.getLedsNumber())
+					// Calculate the physical LED count needed
+					uint16_t physicalLedSize = ledSize * LED_DIVISOR;
+					
+					if (physicalLedSize != base.getLedsNumber() * LED_DIVISOR)
 						base.initLedStrip(ledSize);
 
 					frameState.setState(AwaProtocol::RED);
