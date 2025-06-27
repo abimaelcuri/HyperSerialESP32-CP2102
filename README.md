@@ -154,3 +154,70 @@ ESP32 MH-ET LIVE mini is capable of 4Mb serial port speed and ESP32-S2 lolin min
 | 600LEDs RGBW<br>Refresh rate / continues output=42Hz  |          42         |           42           |          42         |
 | 900LEDs RGBW<br>Refresh rate / continues output=28Hz  |          28         |           28           |          28         |
 
+## LED Duplication Feature
+
+This firmware includes a LED duplication feature that allows you to reduce the required bandwidth by duplicating each logical LED to multiple physical LEDs. Useful for high density led strips like 240 led/m and low baud rate ESP32.
+
+### How it works
+
+- **LED_DIVISOR=1**: Each logical LED controls 1 physical LED (normal operation)
+- **LED_DIVISOR=2**: Each logical LED controls 2 physical LEDs (reduces bandwidth by 50%)
+- **LED_DIVISOR=3**: Each logical LED controls 3 physical LEDs (reduces bandwidth by 66%)
+- And so on...
+
+### Example
+
+If you have 300 physical LEDs and set `LED_DIVISOR=2`:
+- The firmware will expect data for 150 logical LEDs
+- Each logical LED will control 2 physical LEDs
+- LED 0 data → Physical LEDs 0 and 1
+- LED 1 data → Physical LEDs 2 and 3
+- LED 2 data → Physical LEDs 4 and 5
+- etc.
+
+### Configuration
+
+#### Method 1: Global setting (affects all environments)
+Edit the `[env]` section in `platformio.ini`:
+```ini
+[env]
+framework = arduino
+extra_scripts = pre:extra_script.py
+build_flags = -DSERIALCOM_SPEED=921600 -DLED_DIVISOR=2
+```
+
+#### Method 2: Environment-specific setting
+Create a new environment or modify existing one:
+```ini
+[env:WS281x_RGB_DUPLICATE]
+build_flags = -DNEOPIXEL_RGB -DDATA_PIN=2 -DLED_DIVISOR=2 ${env.build_flags}
+custom_prog_version = esp32_WS281x_RGB_DUPLICATE
+board = esp32dev
+platform = ${esp32.platform}
+lib_deps = ${esp32.lib_deps}
+test_ignore = ${esp32.test_ignore}
+```
+
+### HyperHDR Configuration
+
+When using LED duplication, you need to configure HyperHDR with the **logical** number of LEDs (not the physical count).
+
+Example:
+- Physical LEDs: 300
+- LED_DIVISOR: 2
+- Configure HyperHDR with: 150 LEDs (half of leds on each side)
+
+### Benefits
+
+1. **Reduced bandwidth**: Less data needs to be transmitted
+2. **Lower CPU usage**: Less processing required
+3. **Compatible with existing setups**: No changes needed in HyperHDR configuration
+4. **Flexible**: Can be easily adjusted by changing the LED_DIVISOR value
+5. **Low latency**: Lower latency for less data and same effect in most cases with high density led strip like 240 leds/m
+
+### Limitations
+
+- All LEDs in a group will have the same color
+- May not be suitable for applications requiring individual LED control
+- Physical LED count must be divisible by LED_DIVISOR for optimal results
+

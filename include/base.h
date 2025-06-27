@@ -30,6 +30,11 @@
 
 #include "freertos/semphr.h"
 
+// Ensure LED_DIVISOR is defined
+#ifndef LED_DIVISOR
+#define LED_DIVISOR 1
+#endif
+
 #if defined(SECOND_SEGMENT_START_INDEX)
 	#if !defined(SECOND_SEGMENT_DATA_PIN)
 		#error "Please define SECOND_SEGMENT_DATA_PIN for second segment"
@@ -91,20 +96,24 @@ class Base
 				ledStrip2 = nullptr;
 			}
 
+			// Store the original count for protocol purposes
 			ledsNumber = count;
+			
+			// Calculate the actual number of physical LEDs needed
+			int physicalLedCount = count * LED_DIVISOR;
 
 			#if defined(SECOND_SEGMENT_START_INDEX)
-				if (ledsNumber > SECOND_SEGMENT_START_INDEX)
+				if (physicalLedCount > SECOND_SEGMENT_START_INDEX)
 				{
 					#if defined(NEOPIXEL_RGBW) || defined(NEOPIXEL_RGB)
 						ledStrip1 = new LED_DRIVER(SECOND_SEGMENT_START_INDEX, DATA_PIN);
 						ledStrip1->Begin();
-						ledStrip2 = new LED_DRIVER2(ledsNumber - SECOND_SEGMENT_START_INDEX, SECOND_SEGMENT_DATA_PIN);
+						ledStrip2 = new LED_DRIVER2(physicalLedCount - SECOND_SEGMENT_START_INDEX, SECOND_SEGMENT_DATA_PIN);
 						ledStrip2->Begin();
 					#else
 						ledStrip1 = new LED_DRIVER(SECOND_SEGMENT_START_INDEX);
 						ledStrip1->Begin(CLOCK_PIN, 12, DATA_PIN, 15);
-						ledStrip2 = new LED_DRIVER2(ledsNumber - SECOND_SEGMENT_START_INDEX);
+						ledStrip2 = new LED_DRIVER2(physicalLedCount - SECOND_SEGMENT_START_INDEX);
 						ledStrip2->Begin(SECOND_SEGMENT_CLOCK_PIN, 12, SECOND_SEGMENT_DATA_PIN, 15);
 					#endif
 				}
@@ -113,10 +122,10 @@ class Base
 			if (ledStrip1 == nullptr)
 			{
 				#if defined(NEOPIXEL_RGBW) || defined(NEOPIXEL_RGB)
-					ledStrip1 = new LED_DRIVER(ledsNumber, DATA_PIN);
+					ledStrip1 = new LED_DRIVER(physicalLedCount, DATA_PIN);
 					ledStrip1->Begin();
 				#else
-					ledStrip1 = new LED_DRIVER(ledsNumber);
+					ledStrip1 = new LED_DRIVER(physicalLedCount);
 					ledStrip1->Begin(CLOCK_PIN, 12, DATA_PIN, 15);
 				#endif
 			}
@@ -161,20 +170,30 @@ class Base
 		{
 			if (pix < ledsNumber)
 			{
-				#if defined(SECOND_SEGMENT_START_INDEX)
-					if (pix < SECOND_SEGMENT_START_INDEX)
-						ledStrip1->SetPixelColor(pix, inputColor);
-					else
-					{
-						#if defined(SECOND_SEGMENT_REVERSED)
-							ledStrip2->SetPixelColor(ledsNumber - pix - 1, inputColor);
-						#else
-							ledStrip2->SetPixelColor(pix - SECOND_SEGMENT_START_INDEX, inputColor);
-						#endif
-					}
-				#else
-					ledStrip1->SetPixelColor(pix, inputColor);
-				#endif
+				// Calculate the actual LED index considering the divisor
+				uint16_t actualLedIndex = pix * LED_DIVISOR;
+				uint16_t physicalLedCount = ledsNumber * LED_DIVISOR;
+				
+				// Set the color for all LEDs in the divisor group
+				for (uint8_t i = 0; i < LED_DIVISOR && (actualLedIndex + i) < physicalLedCount; i++)
+				{
+					uint16_t targetLed = actualLedIndex + i;
+					
+					#if defined(SECOND_SEGMENT_START_INDEX)
+						if (targetLed < SECOND_SEGMENT_START_INDEX)
+							ledStrip1->SetPixelColor(targetLed, inputColor);
+						else
+						{
+							#if defined(SECOND_SEGMENT_REVERSED)
+								ledStrip2->SetPixelColor(physicalLedCount - targetLed - 1, inputColor);
+							#else
+								ledStrip2->SetPixelColor(targetLed - SECOND_SEGMENT_START_INDEX, inputColor);
+							#endif
+						}
+					#else
+						ledStrip1->SetPixelColor(targetLed, inputColor);
+					#endif
+				}
 			}
 
 			return (pix + 1 < ledsNumber);

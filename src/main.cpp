@@ -58,6 +58,7 @@
 	#pragma message(VAR_NAME_VALUE(SPILED_WS2801))
 #endif
 #pragma message(VAR_NAME_VALUE(SERIALCOM_SPEED))
+#pragma message(VAR_NAME_VALUE(LED_DIVISOR))
 
 #if defined(ARDUINO_LOLIN_S2_MINI)
 	#ifdef NEOPIXEL_RGBW
@@ -224,6 +225,16 @@ void setup()
 			SerialPort.write("SECOND_SEGMENT_START_INDEX = ");
 			SerialPort.println(SECOND_SEGMENT_START_INDEX);
 		#endif
+		
+		// LED Divisor info
+		SerialPort.write("LED_DIVISOR = ");
+		SerialPort.println(LED_DIVISOR);
+		if (LED_DIVISOR > 1)
+		{
+			SerialPort.write("LED duplication enabled: each logical LED will control ");
+			SerialPort.print(LED_DIVISOR);
+			SerialPort.println(" physical LEDs");
+		}
 
 		// Colorspace/Led type info
 		#if defined(NEOPIXEL_RGBW) || defined(NEOPIXEL_RGB)
